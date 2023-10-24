@@ -1,5 +1,6 @@
 do
 $install$
+declare _t text;
 begin
 
 /* #region init */
@@ -54,7 +55,7 @@ from
 where
     nspname not like 'pg_%' 
     and nspname <> 'information_schema' 
-    and nspname <> 'schema' 
+    /* and nspname <> 'schema' */
     and ($1 is null or nspname similar to $1);
 $$;
 /* #endregion _get_schema_array */
@@ -322,56 +323,6 @@ end;
 $$;
 /* #endregion _search_filter */
 
-/* #region _routines_order */
-create function schema._routines_order(_schemas text[])
-returns table (
-    specific_schema text,
-    specific_name text,
-    order_by numeric
-)
-language sql
-as
-$$
-with recursive cte as (
-    select 
-        r.specific_schema,
-        r.specific_name,
-        r.external_language,
-        u.routine_schema,
-        u.routine_name, 
-        1::numeric + (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
-    from
-        information_schema.routines r
-        left join information_schema.routine_routine_usage u using (specific_schema, specific_name)
-    where 
-        u.routine_schema is null and r.specific_schema = any(_schemas)
-
-    union all 
-
-    select 
-        r.specific_schema,
-        r.specific_name,
-        r.external_language,
-        u.routine_schema,
-        u.routine_name, 
-        cte.order_by - 1 + (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
-    from
-        information_schema.routines r
-        join information_schema.routine_routine_usage u 
-        on r.specific_schema = u.specific_schema and r.specific_name = u.specific_name
-        join cte 
-        on u.routine_schema = cte.specific_schema and u.routine_name = cte.specific_name
-    where 
-        r.specific_schema = any(_schemas)
-)
-select
-    cte.specific_schema,
-    cte.specific_name,
-    cte.order_by
-from cte
-$$;
-/* #endregion _routines_order */
-
 /* #region _quote */
 create function schema._quote(text)
 returns text
@@ -381,6 +332,48 @@ $$
 select case when position(E'\'' in $1) > 0 then 'E''' || replace($1, E'\'', '\''') || E'\'' else E'\'' || $1 || E'\'' end
 $$;
 /* #endregion _quote */
+
+/* #region _aggregates */
+create function schema._aggregates(_schemas text[])
+returns table (
+    type text,
+    schema text,
+    name text,
+    comment text,
+    definition text
+)
+language sql
+as
+$$
+select
+    'aggregate' as type,
+    n.nspname as schema,
+    p.proname as name,
+    pg_catalog.obj_description(p.oid, 'pg_proc') as comment,
+    format(
+        E'CREATE AGGREGATE %I.%I(%s) (\n%s\n);',
+        n.nspname,
+        p.proname,
+        format_type(a.aggtranstype, null),
+        array_to_string(
+            array[
+                format('    SFUNC = %s', a.aggtransfn::regproc),
+                format('    STYPE = %s', format_type(a.aggtranstype, NULL)),
+                case a.aggfinalfn when '-'::regproc then null else format('    FINALFUNC = %s', a.aggfinalfn::text) end,
+                case a.aggsortop when 0 then null else format('    SORTOP = %s', op.oprname) end,
+                case when a.agginitval is null then null else format('    INITCOND = %s', a.agginitval) end
+            ], E',\n'
+        )
+    ) as definition
+from 
+    pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on p.pronamespace = n.oid
+    join pg_catalog.pg_aggregate a on p.oid = a.aggfnoid::regproc::oid
+    left join pg_catalog.pg_operator op on op.oid = a.aggsortop
+where 
+    n.nspname = any(_schemas) and p.prokind = 'a'
+$$;
+/* #endregion _aggregates */
 
 /* #region _routines */
 create function schema._routines(_schemas text[])
@@ -464,6 +457,56 @@ from (
 order by type desc, name
 $$;
 /* #endregion _routines */
+
+/* #region _routines_order */
+create function schema._routines_order(_schemas text[])
+returns table (
+    specific_schema text,
+    specific_name text,
+    order_by numeric
+)
+language sql
+as
+$$
+with recursive cte as (
+    select 
+        r.specific_schema,
+        r.specific_name,
+        r.external_language,
+        u.routine_schema,
+        u.routine_name, 
+        1::numeric - (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
+    from
+        information_schema.routines r
+        left join information_schema.routine_routine_usage u using (specific_schema, specific_name)
+    where 
+        u.routine_schema is null and r.specific_schema = any(_schemas)
+
+    union all 
+
+    select 
+        r.specific_schema,
+        r.specific_name,
+        r.external_language,
+        u.routine_schema,
+        u.routine_name, 
+        cte.order_by + 1 - (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
+    from
+        information_schema.routines r
+        join information_schema.routine_routine_usage u 
+        on r.specific_schema = u.specific_schema and r.specific_name = u.specific_name
+        join cte 
+        on u.routine_schema = cte.specific_schema and u.routine_name = cte.specific_name
+    where 
+        r.specific_schema = any(_schemas)
+)
+select
+    cte.specific_schema,
+    cte.specific_name,
+    cte.order_by
+from cte
+$$;
+/* #endregion _routines_order */
 
 /* #region _constraints */
 create function schema._constraints(_schemas text[])
@@ -963,6 +1006,57 @@ where
 $$;
 /* #endregion _views */
 
+/* #region _views_order */
+create function schema._views_order(_schemas text[])
+returns table (
+    schema text,
+    name text,
+    order_by numeric
+)
+language sql
+as
+$$
+with recursive view_usage_cte as (
+    select view_schema, view_name, table_schema, table_name
+    from information_schema.view_table_usage u
+    join information_schema.views v using(table_schema, table_name)
+    where view_schema = any(_schemas)
+),
+rec_cte as (
+    select 
+        v.table_schema as view_schema, 
+        v.table_name as view_name,
+        u.view_schema as table_schema, 
+        u.view_name as table_name,
+        1 as order_by
+    from
+        information_schema.views v
+        left join view_usage_cte u on v.table_schema = u.view_schema and v.table_name = u.view_name
+    where 
+        u.view_schema is null and v.table_schema = any(_schemas)
+
+    union all 
+
+    select 
+        u.view_schema, 
+        u.view_name,
+        u.table_schema, 
+        u.table_name,
+        c.order_by + 1 as order_by
+    from
+        view_usage_cte u
+        join rec_cte c on u.table_schema = c.view_schema and u.table_name = c.view_name
+    where 
+        u.table_schema = any(_schemas)
+)
+select
+    c.view_schema as schema, 
+    c.view_name as name,
+    c.order_by
+from rec_cte c
+$$;
+/* #endregion _views_order */
+
 /* #region _types */
 create function schema._types(_schemas text[])
 returns table (
@@ -1359,7 +1453,7 @@ begin
     
     _schemas = schema._get_schema_array(_schema);
     if _schemas is null or _schemas = '{}' then
-        raise exception 'No schema found for expression: %s', _schema;
+        raise exception 'No schema found for expression: %', _schema;
     end if;
     
     if schema._temp_exists('search') then
@@ -1542,6 +1636,17 @@ begin
     from schema._rules(_schemas) t
     where
         schema._search_filter(t, _type, _search);
+
+    insert into pg_temp.search
+    select  
+        t.type,
+        t.schema,
+        t.name,
+        t.comment,
+        t.definition
+    from schema._aggregates(_schemas) t
+    where
+        schema._search_filter(t, _type, _search);
     
     return query
     select 
@@ -1579,6 +1684,7 @@ create function schema.dump(
     
     _include_views boolean = true,
     _include_routines boolean = true,
+    _include_aggregates boolean = true,
     _include_rules boolean = true,
     
     _single_row boolean = false
@@ -1597,7 +1703,7 @@ begin
 
     _schemas = schema._get_schema_array(_schema);
     if _schemas is null or _schemas = '{}' then
-        raise exception 'No schema found for expression: %s', _schema;
+        raise exception 'No schema found for expression: %', _schema;
     end if;
     
     if schema._temp_exists('dump') then
@@ -1723,33 +1829,7 @@ begin
             perform pg_temp.lines(definition) from tables_tmp;
             perform pg_temp.lines('');
         end if;
-    end if;
 
-    if _include_routines then
-        create temp table routines_tmp on commit drop as
-        select t.type, t.definition from schema._routines(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
-        
-        get diagnostics _count = row_count;
-        if _count > 0 then
-            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from routines_tmp));
-            perform pg_temp.lines(definition) from routines_tmp;
-            perform pg_temp.lines('');
-        end if;
-    end if;
-
-    if _include_views then
-        create temp table views_tmp on commit drop as
-        select t.type, t.definition from schema._views(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
-        
-        get diagnostics _count = row_count;
-        if _count > 0 then
-            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from views_tmp));
-            perform pg_temp.lines(definition) from views_tmp;
-            perform pg_temp.lines('');
-        end if;
-    end if;
-
-    if _include_tables then
         if _include_sequences then
             create temp table sequence_owners_tmp on commit drop as
             select t1.definition 
@@ -1805,8 +1885,58 @@ begin
                 perform pg_temp.lines(definition) from indexes_tmp;
                 perform pg_temp.lines('');
             end if;
-        end if;
+        end if;    
+    end if;
 
+    if _include_routines then
+        create temp table routines_tmp on commit drop as
+        select t.type, t.definition 
+        from schema._routines(_schemas) t 
+        left join schema._routines_order(_schemas) o 
+        on t.schema = o.specific_schema and t.specific_name = o.specific_name
+        where schema._search_filter(t, null, null) 
+        order by o.order_by, t.schema, t.name;
+
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from routines_tmp));
+            perform pg_temp.lines(definition) from routines_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_aggregates then
+        create temp table aggregates_tmp on commit drop as
+        select t.type, t.definition 
+        from schema._aggregates(_schemas) t 
+        where schema._search_filter(t, _type, _search) 
+        order by t.schema, t.name;
+
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- aggregates');
+            perform pg_temp.lines(definition) from aggregates_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_views then
+        create temp table views_tmp on commit drop as
+        select t.type, t.definition 
+        from schema._views(_schemas) t 
+        left join schema._views_order(_schemas) o using (schema, name)
+        where schema._search_filter(t, _type, _search) 
+        order by o.order_by, t.schema, t.name;
+
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from views_tmp));
+            perform pg_temp.lines(definition) from views_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_tables then
         if _include_triggers then
             create temp table triggers_tmp on commit drop as
             select t.definition from schema._triggers(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
@@ -1861,6 +1991,11 @@ $$;
 /* #endregion dump */
 
 raise notice 'Schema "schema" functions installed.';
+
+raise info 'Following public functions are available:';
+for _t in (select concat(type, ' ', schema, '.', name) from schema.search('schema', 'function') where name not like '\_%') loop
+    raise info '%', _t;
+end loop;
 
 end;
 $install$;

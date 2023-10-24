@@ -10,6 +10,6 @@ from
 where
     nspname not like 'pg_%' 
     and nspname <> 'information_schema' 
-    and nspname <> 'schema' 
+    /* and nspname <> 'schema' */
     and ($1 is null or nspname similar to $1);
 $$;

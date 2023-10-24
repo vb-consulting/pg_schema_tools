@@ -1,5 +1,6 @@
 do
 $install$
+declare _t text;
 begin
 
 /* #region init */
@@ -27,11 +28,13 @@ ${this._create_table_temp_tables}
 
 ${this._search_filter}
 
-${this._routines_order}
-
 ${this._quote}
 
+${this._aggregates}
+
 ${this._routines}
+
+${this._routines_order}
 
 ${this._constraints}
 
@@ -48,6 +51,8 @@ ${this._tables_full}
 ${this._tables}
 
 ${this._views}
+
+${this._views_order}
 
 ${this._types}
 
@@ -68,6 +73,11 @@ ${this.search}
 ${this.dump}
 
 raise notice 'Schema "${this.schema}" functions installed.';
+
+raise info 'Following public functions are available:';
+for _t in (select concat(type, ' ', schema, '.', name) from schema.search('schema', 'function') where name not like '\\_%') loop
+    raise info '%', _t;
+end loop;
 
 end;
 $install$;

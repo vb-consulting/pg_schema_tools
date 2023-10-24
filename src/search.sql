@@ -22,7 +22,7 @@ begin
     
     _schemas = schema._get_schema_array(_schema);
     if _schemas is null or _schemas = '{}' then
-        raise exception 'No schema found for expression: %s', _schema;
+        raise exception 'No schema found for expression: %', _schema;
     end if;
     
     if schema._temp_exists('search') then
@@ -203,6 +203,17 @@ begin
         t.comment,
         t.definition
     from schema._rules(_schemas) t
+    where
+        schema._search_filter(t, _type, _search);
+
+    insert into pg_temp.search
+    select  
+        t.type,
+        t.schema,
+        t.name,
+        t.comment,
+        t.definition
+    from schema._aggregates(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     

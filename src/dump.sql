@@ -23,6 +23,7 @@ create function schema.dump(
     
     _include_views boolean = true,
     _include_routines boolean = true,
+    _include_aggregates boolean = true,
     _include_rules boolean = true,
     
     _single_row boolean = false
@@ -41,7 +42,7 @@ begin
 
     _schemas = schema._get_schema_array(_schema);
     if _schemas is null or _schemas = '{}' then
-        raise exception 'No schema found for expression: %s', _schema;
+        raise exception 'No schema found for expression: %', _schema;
     end if;
     
     if schema._temp_exists('dump') then
@@ -167,33 +168,7 @@ begin
             perform pg_temp.lines(definition) from tables_tmp;
             perform pg_temp.lines('');
         end if;
-    end if;
 
-    if _include_routines then
-        create temp table routines_tmp on commit drop as
-        select t.type, t.definition from schema._routines(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
-        
-        get diagnostics _count = row_count;
-        if _count > 0 then
-            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from routines_tmp));
-            perform pg_temp.lines(definition) from routines_tmp;
-            perform pg_temp.lines('');
-        end if;
-    end if;
-
-    if _include_views then
-        create temp table views_tmp on commit drop as
-        select t.type, t.definition from schema._views(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
-        
-        get diagnostics _count = row_count;
-        if _count > 0 then
-            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from views_tmp));
-            perform pg_temp.lines(definition) from views_tmp;
-            perform pg_temp.lines('');
-        end if;
-    end if;
-
-    if _include_tables then
         if _include_sequences then
             create temp table sequence_owners_tmp on commit drop as
             select t1.definition 
@@ -249,8 +224,58 @@ begin
                 perform pg_temp.lines(definition) from indexes_tmp;
                 perform pg_temp.lines('');
             end if;
-        end if;
+        end if;    
+    end if;
 
+    if _include_routines then
+        create temp table routines_tmp on commit drop as
+        select t.type, t.definition 
+        from schema._routines(_schemas) t 
+        left join schema._routines_order(_schemas) o 
+        on t.schema = o.specific_schema and t.specific_name = o.specific_name
+        where schema._search_filter(t, null, null) 
+        order by o.order_by, t.schema, t.name;
+
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from routines_tmp));
+            perform pg_temp.lines(definition) from routines_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_aggregates then
+        create temp table aggregates_tmp on commit drop as
+        select t.type, t.definition 
+        from schema._aggregates(_schemas) t 
+        where schema._search_filter(t, _type, _search) 
+        order by t.schema, t.name;
+
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- aggregates');
+            perform pg_temp.lines(definition) from aggregates_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_views then
+        create temp table views_tmp on commit drop as
+        select t.type, t.definition 
+        from schema._views(_schemas) t 
+        left join schema._views_order(_schemas) o using (schema, name)
+        where schema._search_filter(t, _type, _search) 
+        order by o.order_by, t.schema, t.name;
+
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- ' || (select string_agg(distinct type || 's', ', ') from views_tmp));
+            perform pg_temp.lines(definition) from views_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_tables then
         if _include_triggers then
             create temp table triggers_tmp on commit drop as
             select t.definition from schema._triggers(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;

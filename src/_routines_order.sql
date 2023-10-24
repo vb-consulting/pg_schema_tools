@@ -14,7 +14,7 @@ with recursive cte as (
         r.external_language,
         u.routine_schema,
         u.routine_name, 
-        1::numeric + (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
+        1::numeric - (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
     from
         information_schema.routines r
         left join information_schema.routine_routine_usage u using (specific_schema, specific_name)
@@ -29,7 +29,7 @@ with recursive cte as (
         r.external_language,
         u.routine_schema,
         u.routine_name, 
-        cte.order_by - 1 + (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
+        cte.order_by + 1 - (case when r.external_language = 'SQL' then 0 else 0.5 end) as order_by
     from
         information_schema.routines r
         join information_schema.routine_routine_usage u 
