@@ -1,4 +1,4 @@
-create function schema.tables(_schemas text[] = schema._get_schema_array(null))
+create function schema._tables(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -12,7 +12,7 @@ $$
 begin
     perform schema._create_table_temp_tables(
         _schemas => _schemas,
-        _create_columns => not schema.temp_exists('_columns'),
+        _create_columns => not schema._temp_exists('_columns'),
         _create_constraints => false,
         _create_indexes => false,
         _create_triggers => false,
@@ -35,7 +35,7 @@ begin
                 'COMMENT ON TABLE ',
                 schema._ident(t.table_schema, t.table_name),
                 ' IS ',
-                schema.quote(pgdesc.description),
+                schema._quote(pgdesc.description),
                 ';'
             ) else '' end,
             case when col.comments is not null then E'\n\n' || col.comments else '' end,
@@ -50,7 +50,7 @@ begin
                     'COMMENT ON COLUMN ',
                     schema._ident(t.table_schema, t.table_name), '.', quote_ident(l.name),
                     ' IS ',
-                    schema.quote(l.comment),
+                    schema._quote(l.comment),
                     ';'
                 ), E'\n' order by order_by) filter (where l.comment is not null) as comments
             from _columns l

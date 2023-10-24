@@ -186,7 +186,7 @@ begin
                 'COMMENT ON ',
                 _signature,
                 ' IS ',
-                schema.quote(_comment),
+                schema._quote(_comment),
                 ';'
             )
         else
@@ -224,7 +224,7 @@ begin
             t.comment,
             t.short_definition,
             t.definition
-        from schema.columns(_schemas) t;
+        from schema._columns(_schemas) t;
     end if;
     if _create_constraints then
         create temp table _constraints on commit drop as
@@ -238,7 +238,7 @@ begin
             t.comment,
             t.short_definition,
             t.definition
-        from schema.constraints(_schemas) t;
+        from schema._constraints(_schemas) t;
     end if;
     if _create_indexes then
         create temp table _indexes on commit drop as
@@ -250,7 +250,7 @@ begin
             t.table_name,
             t.comment,
             t.definition
-        from schema.indexes(_schemas) t;
+        from schema._indexes(_schemas) t;
     end if;
     if _create_triggers then
         create temp table _triggers on commit drop as
@@ -262,7 +262,7 @@ begin
             t.table_name,
             t.comment,
             t.definition
-        from schema.triggers(_schemas) t;
+        from schema._triggers(_schemas) t;
     end if;
     if _create_policies then
         create temp table _policies on commit drop as
@@ -274,7 +274,7 @@ begin
             t.table_name,
             t.comment,
             t.definition
-        from schema.policies(_schemas) t;
+        from schema._policies(_schemas) t;
     end if;
     if _create_sequences then
         create temp table _sequences on commit drop as
@@ -287,7 +287,7 @@ begin
             t.column_name,
             t.comment,
             t.definition
-        from schema.sequences(_schemas) t;
+        from schema._sequences(_schemas) t;
     end if;
 end;
 $$;
@@ -323,7 +323,7 @@ $$;
 /* #endregion _search_filter */
 
 /* #region _routines_order */
-create function schema._routines_order(_schemas text[] = schema._get_schema_array(null))
+create function schema._routines_order(_schemas text[])
 returns table (
     specific_schema text,
     specific_name text,
@@ -372,18 +372,18 @@ from cte
 $$;
 /* #endregion _routines_order */
 
-/* #region quote */
-create function schema.quote(text)
+/* #region _quote */
+create function schema._quote(text)
 returns text
 language sql
 as 
 $$
 select case when position(E'\'' in $1) > 0 then 'E''' || replace($1, E'\'', '\''') || E'\'' else E'\'' || $1 || E'\'' end
 $$;
-/* #endregion quote */
+/* #endregion _quote */
 
-/* #region routines */
-create function schema.routines(_schemas text[] = schema._get_schema_array(null))
+/* #region _routines */
+create function schema._routines(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -463,10 +463,10 @@ from (
 ) r
 order by type desc, name
 $$;
-/* #endregion routines */
+/* #endregion _routines */
 
-/* #region constraints */
-create function schema.constraints(_schemas text[] = schema._get_schema_array(null))
+/* #region _constraints */
+create function schema._constraints(_schemas text[])
 returns table (
     type text,
     order_by int,
@@ -531,10 +531,10 @@ from (
         table_schema = any(_schemas)
 ) sub
 $$;
-/* #endregion constraints */
+/* #endregion _constraints */
 
-/* #region indexes */
-create function schema.indexes(_schemas text[] = schema._get_schema_array(null))
+/* #region _indexes */
+create function schema._indexes(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -562,10 +562,10 @@ from
 where 
     i.schemaname = any(_schemas)
 $$;
-/* #endregion indexes */
+/* #endregion _indexes */
 
-/* #region triggers */
-create function schema.triggers(_schemas text[] = schema._get_schema_array(null))
+/* #region _triggers */
+create function schema._triggers(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -597,10 +597,10 @@ from
         on tr.trigger_name = pg.tgname
         and (quote_ident(event_object_schema) || '.' || quote_ident(event_object_table))::regclass::oid = tgrelid
 $$;
-/* #endregion triggers */
+/* #endregion _triggers */
 
-/* #region policies */
-create function schema.policies(_schemas text[] = schema._get_schema_array(null))
+/* #region _policies */
+create function schema._policies(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -666,10 +666,10 @@ from (
         n.nspname = any(_schemas)
 ) p
 $$;
-/* #endregion policies */
+/* #endregion _policies */
 
-/* #region columns */
-create function schema.columns(_schemas text[] = schema._get_schema_array(null))
+/* #region _columns */
+create function schema._columns(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -704,7 +704,7 @@ select
             'COMMENT ON COLUMN ',
             schema._ident(sub.table_schema, sub.table_name), '.', quote_ident(sub.name),
             ' IS ',
-            schema.quote(sub.comment),
+            schema._quote(sub.comment),
             ';'
         ) else '' end
     ) as definition
@@ -736,10 +736,10 @@ from (
         c.table_schema = any(_schemas)
 ) sub
 $$;
-/* #endregion columns */
+/* #endregion _columns */
 
-/* #region tables_full */
-create function schema.tables_full(_schemas text[] = schema._get_schema_array(null))
+/* #region _tables_full */
+create function schema._tables_full(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -753,12 +753,12 @@ $$
 begin
     perform schema._create_table_temp_tables(
         _schemas => _schemas,
-        _create_columns => not schema.temp_exists('_columns'),
-        _create_constraints => not schema.temp_exists('_constraints'),
-        _create_indexes => not schema.temp_exists('_indexes'),
-        _create_triggers => not schema.temp_exists('_triggers'),
-        _create_policies => not schema.temp_exists('_policies'),
-        _create_sequences => not schema.temp_exists('_sequences')
+        _create_columns => not schema._temp_exists('_columns'),
+        _create_constraints => not schema._temp_exists('_constraints'),
+        _create_indexes => not schema._temp_exists('_indexes'),
+        _create_triggers => not schema._temp_exists('_triggers'),
+        _create_policies => not schema._temp_exists('_policies'),
+        _create_sequences => not schema._temp_exists('_sequences')
     );
     return query
     select 
@@ -777,7 +777,7 @@ begin
                 'COMMENT ON TABLE ',
                 schema._ident(t.table_schema, t.table_name),
                 ' IS ',
-                schema.quote(pgdesc.description),
+                schema._quote(pgdesc.description),
                 ';'
             ) else '' end,
             case when col.comments is not null then case when con.definition is not null then E'\n' else E'\n\n' end || col.comments else '' end,
@@ -796,7 +796,7 @@ begin
                     'COMMENT ON COLUMN ',
                     schema._ident(t.table_schema, t.table_name), '.', quote_ident(l.name),
                     ' IS ',
-                    schema.quote(l.comment),
+                    schema._quote(l.comment),
                     ';'
                 ), E'\n' order by order_by) filter (where l.comment is not null) as comments
             from _columns l
@@ -846,10 +846,10 @@ begin
         and t.table_schema = any(_schemas);
 end;
 $$;
-/* #endregion tables_full */
+/* #endregion _tables_full */
 
-/* #region tables */
-create function schema.tables(_schemas text[] = schema._get_schema_array(null))
+/* #region _tables */
+create function schema._tables(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -863,7 +863,7 @@ $$
 begin
     perform schema._create_table_temp_tables(
         _schemas => _schemas,
-        _create_columns => not schema.temp_exists('_columns'),
+        _create_columns => not schema._temp_exists('_columns'),
         _create_constraints => false,
         _create_indexes => false,
         _create_triggers => false,
@@ -886,7 +886,7 @@ begin
                 'COMMENT ON TABLE ',
                 schema._ident(t.table_schema, t.table_name),
                 ' IS ',
-                schema.quote(pgdesc.description),
+                schema._quote(pgdesc.description),
                 ';'
             ) else '' end,
             case when col.comments is not null then E'\n\n' || col.comments else '' end,
@@ -901,7 +901,7 @@ begin
                     'COMMENT ON COLUMN ',
                     schema._ident(t.table_schema, t.table_name), '.', quote_ident(l.name),
                     ' IS ',
-                    schema.quote(l.comment),
+                    schema._quote(l.comment),
                     ';'
                 ), E'\n' order by order_by) filter (where l.comment is not null) as comments
             from _columns l
@@ -916,10 +916,10 @@ begin
         and t.table_schema = any(_schemas);
 end;
 $$;
-/* #endregion tables */
+/* #endregion _tables */
 
-/* #region views */
-create function schema.views(_schemas text[] = schema._get_schema_array(null))
+/* #region _views */
+create function schema._views(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -947,7 +947,7 @@ select
             case when c.relkind = 'v' then 'VIEW ' when c.relkind = 'm' then 'MATERIALIZED VIEW ' end,
             schema._ident(n.nspname, c.relname),
             ' IS ',
-            schema.quote(pgdesc.description),
+            schema._quote(pgdesc.description),
             ';'
         ) else '' end,
         E'\n'
@@ -961,10 +961,10 @@ where
     c.relkind in ('v', 'm')
     and n.nspname = any(_schemas)
 $$;
-/* #endregion views */
+/* #endregion _views */
 
-/* #region types */
-create function schema.types(_schemas text[] = schema._get_schema_array(null))
+/* #region _types */
+create function schema._types(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -987,7 +987,7 @@ select
             'COMMENT ON TYPE ',
             schema._ident(sub.schema, sub.name),
             ' IS ',
-            schema.quote(sub.comment),
+            schema._quote(sub.comment),
             ';'
         )
     end as definition
@@ -1025,10 +1025,10 @@ from (
         n.nspname = any(_schemas)
 ) sub;
 $$;
-/* #endregion types */
+/* #endregion _types */
 
-/* #region enums */
-create function schema.enums(_schemas text[] = schema._get_schema_array(null))
+/* #region _enums */
+create function schema._enums(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -1051,7 +1051,7 @@ select
             'COMMENT ON TYPE ',
             schema._ident(sub.schema, sub.name),
             ' IS ',
-            schema.quote(sub.comment),
+            schema._quote(sub.comment),
             ';'
         )
     end as definition
@@ -1075,7 +1075,7 @@ from (
             select string_agg(
                 concat(
                     '    ',
-                    schema.quote(e.enumlabel)
+                    schema._quote(e.enumlabel)
                 ), E',\n' order by e.enumsortorder
             ) as definition
             from pg_catalog.pg_enum e
@@ -1087,10 +1087,10 @@ from (
         and n.nspname = any(_schemas)
 ) sub;
 $$;
-/* #endregion enums */
+/* #endregion _enums */
 
-/* #region domains */
-create function schema.domains(_schemas text[] = schema._get_schema_array(null))
+/* #region _domains */
+create function schema._domains(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -1113,7 +1113,7 @@ select
             'COMMENT ON TYPE ',
             schema._ident(sub.schema, sub.name),
             ' IS ',
-            schema.quote(sub.comment),
+            schema._quote(sub.comment),
             ';'
         )
     end as definition
@@ -1154,10 +1154,10 @@ from (
         and n.nspname = any(_schemas)
 ) sub;
 $$;
-/* #endregion domains */
+/* #endregion _domains */
 
-/* #region rules */
-create function schema.rules(_schemas text[] = schema._get_schema_array(null))
+/* #region _rules */
+create function schema._rules(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -1179,10 +1179,10 @@ from
 where 
     schemaname = any(_schemas)
 $$;
-/* #endregion rules */
+/* #endregion _rules */
 
-/* #region extensions */
-create function schema.extensions()
+/* #region _extensions */
+create function schema._extensions()
 returns table (
     type text,
     schema text,
@@ -1208,10 +1208,10 @@ from
     join pg_available_extensions a on e.extname = a.name
 where e.extname <> 'plpgsql'
 $$;
-/* #endregion extensions */
+/* #endregion _extensions */
 
-/* #region sequences */
-create function schema.sequences(_schemas text[] = schema._get_schema_array(null))
+/* #region _sequences */
+create function schema._sequences(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -1258,7 +1258,7 @@ from (
                         'COMMENT ON SEQUENCE ',
                         sub1.sequence_name,
                         ' IS ',
-                        schema.quote(sub1.comment),
+                        schema._quote(sub1.comment),
                         ';'
                     )
                     else ''
@@ -1319,10 +1319,10 @@ from (
     ) sub1
 ) sub2
 $$;
-/* #endregion sequences */
+/* #endregion _sequences */
 
-/* #region temp_exists */
-create function schema.temp_exists(text)
+/* #region _temp_exists */
+create function schema._temp_exists(text)
 returns boolean
 language sql
 as 
@@ -1332,7 +1332,7 @@ select exists(
     where t.table_name = $1 and table_type = 'LOCAL TEMPORARY'
 )
 $$;
-/* #endregion temp_exists */
+/* #endregion _temp_exists */
 
 /* #region search */
 create function schema.search(
@@ -1362,7 +1362,7 @@ begin
         raise exception 'No schema found for expression: %s', _schema;
     end if;
     
-    if schema.temp_exists('search') then
+    if schema._temp_exists('search') then
         drop table pg_temp.search;
     end if;
     
@@ -1373,7 +1373,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.extensions() t
+    from schema._extensions() t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1384,7 +1384,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.types(_schemas) t
+    from schema._types(_schemas) t
     where
         schema._search_filter(t, _type, _search);
         
@@ -1395,7 +1395,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.enums(_schemas) t
+    from schema._enums(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1406,7 +1406,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.domains(_schemas) t
+    from schema._domains(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1419,7 +1419,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.tables_full(_schemas) t
+    from schema._tables_full(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1517,7 +1517,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.views(_schemas) t
+    from schema._views(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1528,7 +1528,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.routines(_schemas) t
+    from schema._routines(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1539,7 +1539,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.rules(_schemas) t
+    from schema._rules(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -1600,7 +1600,7 @@ begin
         raise exception 'No schema found for expression: %s', _schema;
     end if;
     
-    if schema.temp_exists('dump') then
+    if schema._temp_exists('dump') then
         drop table pg_temp.dump;
     end if;
     create temp table pg_temp.dump(number int not null generated always as identity, line text not null);    
@@ -1635,7 +1635,7 @@ begin
 
     if _include_extensions then
         create temp table extensions_tmp on commit drop as
-        select t.definition from schema.extensions() t where schema._search_filter(t, _type, _search) order by t.name;
+        select t.definition from schema._extensions() t where schema._search_filter(t, _type, _search) order by t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -1659,7 +1659,7 @@ begin
     
     if _include_types then
         create temp table types_tmp on commit drop as
-        select t.definition from schema.types(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.definition from schema._types(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -1671,7 +1671,7 @@ begin
 
     if _include_enums then
         create temp table enums_tmp on commit drop as
-        select t.definition from schema.enums(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.definition from schema._enums(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -1683,7 +1683,7 @@ begin
 
     if _include_domains then
         create temp table domains_tmp on commit drop as
-        select t.definition from schema.domains(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.definition from schema._domains(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -1696,7 +1696,7 @@ begin
     if _include_sequences then
         create temp table sequences_tmp on commit drop as
         select t.definition 
-        from schema.sequences(_schemas) t 
+        from schema._sequences(_schemas) t 
         where schema._search_filter(t, _type, _search) and t.definition like 'CREATE %'
         order by t.schema, t.name;
         
@@ -1713,7 +1713,7 @@ begin
 
         create temp table tables_tmp on commit drop as
         select t.schema, t.name, t.definition 
-        from schema.tables(_schemas) t 
+        from schema._tables(_schemas) t 
         where schema._search_filter(t, _type, _search) 
         order by t.schema, t.name;
         
@@ -1727,7 +1727,7 @@ begin
 
     if _include_routines then
         create temp table routines_tmp on commit drop as
-        select t.type, t.definition from schema.routines(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.type, t.definition from schema._routines(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -1739,7 +1739,7 @@ begin
 
     if _include_views then
         create temp table views_tmp on commit drop as
-        select t.type, t.definition from schema.views(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.type, t.definition from schema._views(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -1809,7 +1809,7 @@ begin
 
         if _include_triggers then
             create temp table triggers_tmp on commit drop as
-            select t.definition from schema.triggers(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+            select t.definition from schema._triggers(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
             
             get diagnostics _count = row_count;
             if _count > 0 then
@@ -1821,7 +1821,7 @@ begin
 
         if _include_policies then
             create temp table policies_tmp on commit drop as
-            select t.definition from schema.policies(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+            select t.definition from schema._policies(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
             
             get diagnostics _count = row_count;
             if _count > 0 then
@@ -1835,7 +1835,7 @@ begin
 
     if _include_rules then
             create temp table rules_tmp on commit drop as
-            select t.definition from schema.rules(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+            select t.definition from schema._rules(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
             
             get diagnostics _count = row_count;
             if _count > 0 then

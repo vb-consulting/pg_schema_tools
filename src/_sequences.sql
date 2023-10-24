@@ -1,4 +1,4 @@
-create function schema.sequences(_schemas text[] = schema._get_schema_array(null))
+create function schema._sequences(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -45,7 +45,7 @@ from (
                         'COMMENT ON SEQUENCE ',
                         sub1.sequence_name,
                         ' IS ',
-                        schema.quote(sub1.comment),
+                        schema._quote(sub1.comment),
                         ';'
                     )
                     else ''

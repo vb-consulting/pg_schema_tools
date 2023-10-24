@@ -44,7 +44,7 @@ begin
         raise exception 'No schema found for expression: %s', _schema;
     end if;
     
-    if schema.temp_exists('dump') then
+    if schema._temp_exists('dump') then
         drop table pg_temp.dump;
     end if;
     create temp table pg_temp.dump(number int not null generated always as identity, line text not null);    
@@ -79,7 +79,7 @@ begin
 
     if _include_extensions then
         create temp table extensions_tmp on commit drop as
-        select t.definition from schema.extensions() t where schema._search_filter(t, _type, _search) order by t.name;
+        select t.definition from schema._extensions() t where schema._search_filter(t, _type, _search) order by t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -103,7 +103,7 @@ begin
     
     if _include_types then
         create temp table types_tmp on commit drop as
-        select t.definition from schema.types(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.definition from schema._types(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -115,7 +115,7 @@ begin
 
     if _include_enums then
         create temp table enums_tmp on commit drop as
-        select t.definition from schema.enums(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.definition from schema._enums(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -127,7 +127,7 @@ begin
 
     if _include_domains then
         create temp table domains_tmp on commit drop as
-        select t.definition from schema.domains(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.definition from schema._domains(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -140,7 +140,7 @@ begin
     if _include_sequences then
         create temp table sequences_tmp on commit drop as
         select t.definition 
-        from schema.sequences(_schemas) t 
+        from schema._sequences(_schemas) t 
         where schema._search_filter(t, _type, _search) and t.definition like 'CREATE %'
         order by t.schema, t.name;
         
@@ -157,7 +157,7 @@ begin
 
         create temp table tables_tmp on commit drop as
         select t.schema, t.name, t.definition 
-        from schema.tables(_schemas) t 
+        from schema._tables(_schemas) t 
         where schema._search_filter(t, _type, _search) 
         order by t.schema, t.name;
         
@@ -171,7 +171,7 @@ begin
 
     if _include_routines then
         create temp table routines_tmp on commit drop as
-        select t.type, t.definition from schema.routines(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.type, t.definition from schema._routines(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -183,7 +183,7 @@ begin
 
     if _include_views then
         create temp table views_tmp on commit drop as
-        select t.type, t.definition from schema.views(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        select t.type, t.definition from schema._views(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
         
         get diagnostics _count = row_count;
         if _count > 0 then
@@ -253,7 +253,7 @@ begin
 
         if _include_triggers then
             create temp table triggers_tmp on commit drop as
-            select t.definition from schema.triggers(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+            select t.definition from schema._triggers(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
             
             get diagnostics _count = row_count;
             if _count > 0 then
@@ -265,7 +265,7 @@ begin
 
         if _include_policies then
             create temp table policies_tmp on commit drop as
-            select t.definition from schema.policies(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+            select t.definition from schema._policies(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
             
             get diagnostics _count = row_count;
             if _count > 0 then
@@ -279,7 +279,7 @@ begin
 
     if _include_rules then
             create temp table rules_tmp on commit drop as
-            select t.definition from schema.rules(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+            select t.definition from schema._rules(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
             
             get diagnostics _count = row_count;
             if _count > 0 then

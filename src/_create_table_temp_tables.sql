@@ -24,7 +24,7 @@ begin
             t.comment,
             t.short_definition,
             t.definition
-        from schema.columns(_schemas) t;
+        from schema._columns(_schemas) t;
     end if;
     if _create_constraints then
         create temp table _constraints on commit drop as
@@ -38,7 +38,7 @@ begin
             t.comment,
             t.short_definition,
             t.definition
-        from schema.constraints(_schemas) t;
+        from schema._constraints(_schemas) t;
     end if;
     if _create_indexes then
         create temp table _indexes on commit drop as
@@ -50,7 +50,7 @@ begin
             t.table_name,
             t.comment,
             t.definition
-        from schema.indexes(_schemas) t;
+        from schema._indexes(_schemas) t;
     end if;
     if _create_triggers then
         create temp table _triggers on commit drop as
@@ -62,7 +62,7 @@ begin
             t.table_name,
             t.comment,
             t.definition
-        from schema.triggers(_schemas) t;
+        from schema._triggers(_schemas) t;
     end if;
     if _create_policies then
         create temp table _policies on commit drop as
@@ -74,7 +74,7 @@ begin
             t.table_name,
             t.comment,
             t.definition
-        from schema.policies(_schemas) t;
+        from schema._policies(_schemas) t;
     end if;
     if _create_sequences then
         create temp table _sequences on commit drop as
@@ -87,7 +87,7 @@ begin
             t.column_name,
             t.comment,
             t.definition
-        from schema.sequences(_schemas) t;
+        from schema._sequences(_schemas) t;
     end if;
 end;
 $$;

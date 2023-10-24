@@ -1,4 +1,4 @@
-create function schema.temp_exists(text)
+create function schema._temp_exists(text)
 returns boolean
 language sql
 as 

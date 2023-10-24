@@ -25,7 +25,7 @@ begin
         raise exception 'No schema found for expression: %s', _schema;
     end if;
     
-    if schema.temp_exists('search') then
+    if schema._temp_exists('search') then
         drop table pg_temp.search;
     end if;
     
@@ -36,7 +36,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.extensions() t
+    from schema._extensions() t
     where
         schema._search_filter(t, _type, _search);
     
@@ -47,7 +47,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.types(_schemas) t
+    from schema._types(_schemas) t
     where
         schema._search_filter(t, _type, _search);
         
@@ -58,7 +58,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.enums(_schemas) t
+    from schema._enums(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -69,7 +69,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.domains(_schemas) t
+    from schema._domains(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -82,7 +82,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.tables_full(_schemas) t
+    from schema._tables_full(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -180,7 +180,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.views(_schemas) t
+    from schema._views(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -191,7 +191,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.routines(_schemas) t
+    from schema._routines(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     
@@ -202,7 +202,7 @@ begin
         t.name,
         t.comment,
         t.definition
-    from schema.rules(_schemas) t
+    from schema._rules(_schemas) t
     where
         schema._search_filter(t, _type, _search);
     

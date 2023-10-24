@@ -1,4 +1,4 @@
-create function schema.extensions()
+create function schema._extensions()
 returns table (
     type text,
     schema text,

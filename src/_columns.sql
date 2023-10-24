@@ -1,4 +1,4 @@
-create function schema.columns(_schemas text[] = schema._get_schema_array(null))
+create function schema._columns(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -33,7 +33,7 @@ select
             'COMMENT ON COLUMN ',
             schema._ident(sub.table_schema, sub.table_name), '.', quote_ident(sub.name),
             ' IS ',
-            schema.quote(sub.comment),
+            schema._quote(sub.comment),
             ';'
         ) else '' end
     ) as definition

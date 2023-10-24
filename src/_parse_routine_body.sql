@@ -25,7 +25,7 @@ begin
                 'COMMENT ON ',
                 _signature,
                 ' IS ',
-                schema.quote(_comment),
+                schema._quote(_comment),
                 ';'
             )
         else

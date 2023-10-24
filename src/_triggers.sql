@@ -1,4 +1,4 @@
-create function schema.triggers(_schemas text[] = schema._get_schema_array(null))
+create function schema._triggers(_schemas text[])
 returns table (
     type text,
     schema text,

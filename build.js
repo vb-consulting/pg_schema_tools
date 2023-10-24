@@ -1,4 +1,3 @@
-
 const templateFile = "template.sql";
 const srcDir = "src/";
 const buildFile = "build.sql";
@@ -17,14 +16,14 @@ const template = 'return `' + fs.readFileSync(templateFile, "utf8") + '`';
 const data = {schema};
 const render = () => new Function(template).call(data);
 const exec = cmd => new Promise(resolve => {
-    console.log(cmd);
+    console.info(cmd);
     let exec = cp.exec(cmd);
-    exec.stdout.on("data", data => { if (data) { console.log(data); } });
+    exec.stdout.on("data", data => { if (data) { console.info(data); } });
     exec.stderr.on("data", data => { if (data) { console.error(data); } });
     exec.on("exit", () => resolve());
 });
 
-let files = fs.readdirSync(srcDir)
+const files = fs.readdirSync(srcDir)
 for(let file of files) {
     const key = path.parse(file).name;
     data[key] = '/* #region ' + key + ' */\n' + 
@@ -34,8 +33,8 @@ for(let file of files) {
 
 fs.writeFileSync(buildFile, render(), "utf8"); 
 
-console.log("Build complete.");
-console.log("File " + buildFile + " created.");
-console.log("Executing...");
+console.info("Build complete.");
+console.info("File " + buildFile + " created.");
+console.info("Executing...");
 
-exec(runCommand).then(() => console.log("Done."));
+exec(runCommand).then(() => console.info("Done."));

@@ -1,4 +1,4 @@
-create function schema.tables_full(_schemas text[] = schema._get_schema_array(null))
+create function schema._tables_full(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -12,12 +12,12 @@ $$
 begin
     perform schema._create_table_temp_tables(
         _schemas => _schemas,
-        _create_columns => not schema.temp_exists('_columns'),
-        _create_constraints => not schema.temp_exists('_constraints'),
-        _create_indexes => not schema.temp_exists('_indexes'),
-        _create_triggers => not schema.temp_exists('_triggers'),
-        _create_policies => not schema.temp_exists('_policies'),
-        _create_sequences => not schema.temp_exists('_sequences')
+        _create_columns => not schema._temp_exists('_columns'),
+        _create_constraints => not schema._temp_exists('_constraints'),
+        _create_indexes => not schema._temp_exists('_indexes'),
+        _create_triggers => not schema._temp_exists('_triggers'),
+        _create_policies => not schema._temp_exists('_policies'),
+        _create_sequences => not schema._temp_exists('_sequences')
     );
     return query
     select 
@@ -36,7 +36,7 @@ begin
                 'COMMENT ON TABLE ',
                 schema._ident(t.table_schema, t.table_name),
                 ' IS ',
-                schema.quote(pgdesc.description),
+                schema._quote(pgdesc.description),
                 ';'
             ) else '' end,
             case when col.comments is not null then case when con.definition is not null then E'\n' else E'\n\n' end || col.comments else '' end,
@@ -55,7 +55,7 @@ begin
                     'COMMENT ON COLUMN ',
                     schema._ident(t.table_schema, t.table_name), '.', quote_ident(l.name),
                     ' IS ',
-                    schema.quote(l.comment),
+                    schema._quote(l.comment),
                     ';'
                 ), E'\n' order by order_by) filter (where l.comment is not null) as comments
             from _columns l

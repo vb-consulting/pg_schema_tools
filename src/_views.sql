@@ -1,4 +1,4 @@
-create function schema.views(_schemas text[] = schema._get_schema_array(null))
+create function schema._views(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -26,7 +26,7 @@ select
             case when c.relkind = 'v' then 'VIEW ' when c.relkind = 'm' then 'MATERIALIZED VIEW ' end,
             schema._ident(n.nspname, c.relname),
             ' IS ',
-            schema.quote(pgdesc.description),
+            schema._quote(pgdesc.description),
             ';'
         ) else '' end,
         E'\n'

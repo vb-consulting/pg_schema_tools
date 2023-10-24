@@ -1,4 +1,4 @@
-create function schema.constraints(_schemas text[] = schema._get_schema_array(null))
+create function schema._constraints(_schemas text[])
 returns table (
     type text,
     order_by int,

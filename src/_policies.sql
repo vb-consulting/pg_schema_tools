@@ -1,4 +1,4 @@
-create function schema.policies(_schemas text[] = schema._get_schema_array(null))
+create function schema._policies(_schemas text[])
 returns table (
     type text,
     schema text,

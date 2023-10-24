@@ -1,4 +1,4 @@
-create function schema.enums(_schemas text[] = schema._get_schema_array(null))
+create function schema._enums(_schemas text[])
 returns table (
     type text,
     schema text,
@@ -21,7 +21,7 @@ select
             'COMMENT ON TYPE ',
             schema._ident(sub.schema, sub.name),
             ' IS ',
-            schema.quote(sub.comment),
+            schema._quote(sub.comment),
             ';'
         )
     end as definition
@@ -45,7 +45,7 @@ from (
             select string_agg(
                 concat(
                     '    ',
-                    schema.quote(e.enumlabel)
+                    schema._quote(e.enumlabel)
                 ), E',\n' order by e.enumsortorder
             ) as definition
             from pg_catalog.pg_enum e

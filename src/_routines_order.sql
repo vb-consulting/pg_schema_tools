@@ -1,4 +1,4 @@
-create function schema._routines_order(_schemas text[] = schema._get_schema_array(null))
+create function schema._routines_order(_schemas text[])
 returns table (
     specific_schema text,
     specific_name text,

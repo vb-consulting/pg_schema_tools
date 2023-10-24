@@ -4,8 +4,8 @@ begin
 
 /* #region init */
 if exists(select 1 as name from pg_namespace where nspname = '${this.schema}') then
-    --drop schema ${this.schema} cascade;
-    raise exception 'Schema "${this.schema}" already exists. Consider running "drop schema ${this.schema} cascade;" to recreate ${this.schema} schema.';
+    drop schema ${this.schema} cascade;
+    --raise exception 'Schema "${this.schema}" already exists. Consider running "drop schema ${this.schema} cascade;" to recreate ${this.schema} schema.';
 end if;
 
 create schema schema;
@@ -29,39 +29,39 @@ ${this._search_filter}
 
 ${this._routines_order}
 
-${this.quote}
+${this._quote}
 
-${this.routines}
+${this._routines}
 
-${this.constraints}
+${this._constraints}
 
-${this.indexes}
+${this._indexes}
 
-${this.triggers}
+${this._triggers}
 
-${this.policies}
+${this._policies}
 
-${this.columns}
+${this._columns}
 
-${this.tables_full}
+${this._tables_full}
 
-${this.tables}
+${this._tables}
 
-${this.views}
+${this._views}
 
-${this.types}
+${this._types}
 
-${this.enums}
+${this._enums}
 
-${this.domains}
+${this._domains}
 
-${this.rules}
+${this._rules}
 
-${this.extensions}
+${this._extensions}
 
-${this.sequences}
+${this._sequences}
 
-${this.temp_exists}
+${this._temp_exists}
 
 ${this.search}
 

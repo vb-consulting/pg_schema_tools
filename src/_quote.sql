@@ -1,4 +1,4 @@
-create function schema.quote(text)
+create function schema._quote(text)
 returns text
 language sql
 as 
