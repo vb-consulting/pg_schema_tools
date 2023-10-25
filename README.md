@@ -73,7 +73,7 @@ Object types can be either:
 
 #### Search parameters:
 
-- `_schema text = null` - search schemas similar to this parameter or default (null) for all schemas except system schemas. See [`/src/_get_schema_array.sql`](`/src/_get_schema_array.sql`) for more details.
+- `_schema text = null` - search schemas similar to this parameter or default (null) for all schemas except system schemas. See [`src/_get_schema_array.sql`](`src/_get_schema_array.sql`) for more details.
 - `_type text = null` - search types similar to this parameter or default (null) for all types. See above for a list of available types.
 - `_search text = null` - search names, comments, and object definitions similar to this parameter or default (null) for all matches.
 
@@ -89,7 +89,7 @@ Examples:
 
 - `select * from schema.search('public|my%')`- searches only schemas named `public` or schemas that start with `my` (case insensitive).
 
-See [`SIMILAR TO`](https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-SIMILARTO-REGEXP) documentation or [`/src/_get_schema_array.sql`](`/src/_get_schema_array.sql`) implemenation for more details.
+See [`SIMILAR TO`](https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-SIMILARTO-REGEXP) documentation or [`src/_get_schema_array.sql`](`src/_get_schema_array.sql`) implemenation for more details.
 
 ### Function `schema.dump`
 
