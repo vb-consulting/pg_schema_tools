@@ -5,8 +5,8 @@ begin
 
 /* #region init */
 if exists(select 1 as name from pg_namespace where nspname = 'schema') then
-    drop schema schema cascade;
-    --raise exception 'Schema "schema" already exists. Consider running "drop schema schema cascade;" to recreate schema schema.';
+    --drop schema schema cascade;
+    raise exception 'Schema "schema" already exists. Consider running "drop schema schema cascade;" to recreate schema schema.';
 end if;
 
 create schema schema;
@@ -1656,6 +1656,8 @@ begin
         r.schema, r.type desc, r.name;
 end;
 $$;
+
+comment on function schema.search(text, text, text) is 'Search and retrieve the schema objects in the database.';
 /* #endregion search */
 
 /* #region dump */
@@ -1988,6 +1990,8 @@ begin
     end if;
 end;
 $$;
+
+comment on function schema.dump(text, text, text, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) is 'Creates schema script dump.';
 /* #endregion dump */
 
 raise notice 'Schema "schema" functions installed.';

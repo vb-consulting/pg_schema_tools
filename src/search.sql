@@ -225,3 +225,5 @@ begin
         r.schema, r.type desc, r.name;
 end;
 $$;
+
+comment on function schema.search(text, text, text) is 'Search and retrieve the schema objects in the database.';

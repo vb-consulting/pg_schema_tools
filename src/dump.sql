@@ -327,3 +327,5 @@ begin
     end if;
 end;
 $$;
+
+comment on function schema.dump(text, text, text, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) is 'Creates schema script dump.';

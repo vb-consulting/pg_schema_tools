@@ -5,8 +5,8 @@ begin
 
 /* #region init */
 if exists(select 1 as name from pg_namespace where nspname = '${this.schema}') then
-    drop schema ${this.schema} cascade;
-    --raise exception 'Schema "${this.schema}" already exists. Consider running "drop schema ${this.schema} cascade;" to recreate ${this.schema} schema.';
+    --drop schema ${this.schema} cascade;
+    raise exception 'Schema "${this.schema}" already exists. Consider running "drop schema ${this.schema} cascade;" to recreate ${this.schema} schema.';
 end if;
 
 create schema schema;
