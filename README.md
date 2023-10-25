@@ -89,7 +89,7 @@ Examples:
 
 - `select * from schema.search('public|my%')`- searches only schemas named `public` or schemas that start with `my` (case insensitive).
 
-See [`SIMILAR TO`](https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-SIMILARTO-REGEXP) documentation or [`src/_get_schema_array.sql`](./src/_get_schema_array.sql) implemenation for more details.
+See [`SIMILAR TO`](https://www.postgresql.org/docs/current/functions-matching.html#FUNCTIONS-SIMILARTO-REGEXP) documentation or [`src/_search_filter.sql`](./src/_search_filter.sql) implemenation for more details.
 
 ### Function `schema.dump`
 
