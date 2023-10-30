@@ -52,23 +52,20 @@ returns table (
 Object types can be either:
 
 - `% index` - index types have name of index type in prefix, for example: `unique btree index`, `gist index`, `btree index`, etc
+- `% constraint` - constraint types have name of constraint in prefix, for example: `primary key constraint`, `unique constraint`, `check constraint`, `foreign key constraint`, `trigger constraint`, `exclusion constraint`.
 - `aggregate`
-- `check` 
 - `column`
 - `domain`
 - `enum`
-- `foreign key`
 - `function`
 - `materialized view`
 - `policy`
-- `primary key`
 - `procedure`
 - `rule`
 - `sequence`
 - `table`
 - `trigger`
 - `type`
-- `unique`
 - `view`
 
 #### Search parameters:
