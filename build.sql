@@ -375,6 +375,57 @@ where
 $$;
 /* #endregion _aggregates */
 
+/* #region _ranges */
+create function schema._ranges(_schemas text[])
+returns table (
+    type text,
+    schema text,
+    name text,
+    comment text,
+    definition text
+)
+language sql
+as
+$$
+select
+    'range' as type,
+    sub.schema,
+    sub.name,
+    sub.comment,
+    concat(
+        'CREATE TYPE ',
+        schema._ident(sub.schema, sub.name),
+        E' AS RANGE (\n',
+        '    SUBTYPE = ', SUBTYPE,
+        case when SUBTYPE_OPCLASS <> '-' and SUBTYPE_OPCLASS not like 'pg_%' then E',\n    SUBTYPE_OPCLASS = ' || SUBTYPE_OPCLASS else '' end,
+        case when sub.COLLATION <> '-' and sub.COLLATION not like 'pg_%' then E',\n    COLLATION = ' || sub.COLLATION else '' end,
+        case when CANONICAL <> '-' and CANONICAL not like 'pg_%' then E',\n    CANONICAL = ' || CANONICAL else '' end,
+        case when SUBTYPE_DIFF <> '-' and SUBTYPE_DIFF not like 'pg_%' then E',\n    SUBTYPE_DIFF = ' || SUBTYPE_DIFF else '' end,
+        case when MULTIRANGE_TYPE_NAME <> '-' and MULTIRANGE_TYPE_NAME not like 'pg_%' then E',\n    MULTIRANGE_TYPE_NAME = ' || MULTIRANGE_TYPE_NAME else '' end,
+        E'\n);'
+    ) as definition
+from (
+    select
+        n.nspname::text as schema,
+        t.typname::text as name,
+        pg_catalog.obj_description(t.oid, 'pg_type') as comment,
+        r.rngsubtype::regtype::text as SUBTYPE, 
+        r.rngsubopc::regtype::text as SUBTYPE_OPCLASS, 
+        r.rngcollation::regtype::text as COLLATION, 
+        r.rngcanonical::regproc::text as CANONICAL, 
+        r.rngsubdiff::regproc::text as SUBTYPE_DIFF, 
+        r.rngmultitypid::regtype::text as MULTIRANGE_TYPE_NAME
+    from 
+        pg_catalog.pg_type t
+        join pg_catalog.pg_namespace n on n.oid = t.typnamespace
+        join pg_catalog.pg_range r on t.oid = r.rngtypid 
+    where 
+        t.typtype = 'r'
+        and n.nspname = any(_schemas)
+) sub
+$$;
+/* #endregion _ranges */
+
 /* #region _routines */
 create function schema._routines(_schemas text[])
 returns table (
@@ -1495,6 +1546,17 @@ begin
     from schema._enums(_schemas) t
     where
         schema._search_filter(t, _type, _search);
+
+    insert into pg_temp.search
+    select  
+        t.type,
+        t.schema,
+        t.name,
+        t.comment,
+        t.definition
+    from schema._ranges(_schemas) t
+    where
+        schema._search_filter(t, _type, _search);
     
     insert into pg_temp.search
     select  
@@ -1677,6 +1739,7 @@ create function schema.dump(
     
     _include_types boolean = true,
     _include_enums boolean = true,
+    _include_ranges boolean = true,
     _include_domains boolean = true,
     
     _include_tables boolean = true,
@@ -1788,6 +1851,18 @@ begin
         if _count > 0 then
             perform pg_temp.lines('-- enums');
             perform pg_temp.lines(definition) from enums_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_ranges then
+        create temp table ranges_tmp on commit drop as
+        select t.definition from schema._ranges(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- ranges');
+            perform pg_temp.lines(definition) from ranges_tmp;
             perform pg_temp.lines('');
         end if;
     end if;
@@ -1994,7 +2069,7 @@ begin
 end;
 $$;
 
-comment on function schema.dump(text, text, text, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) is 'Creates schema script dump.';
+comment on function schema.dump(text, text, text, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) is 'Creates schema script dump.';
 /* #endregion dump */
 
 raise notice 'Schema "schema" functions installed.';

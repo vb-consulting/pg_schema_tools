@@ -61,6 +61,17 @@ begin
     from schema._enums(_schemas) t
     where
         schema._search_filter(t, _type, _search);
+
+    insert into pg_temp.search
+    select  
+        t.type,
+        t.schema,
+        t.name,
+        t.comment,
+        t.definition
+    from schema._ranges(_schemas) t
+    where
+        schema._search_filter(t, _type, _search);
     
     insert into pg_temp.search
     select  

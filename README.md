@@ -61,6 +61,7 @@ Object types can be either:
 - `materialized view`
 - `policy`
 - `procedure`
+- `range`
 - `rule`
 - `sequence`
 - `table`
@@ -132,7 +133,6 @@ RETURNS TABLE(line text)
 2. Generated DDL create scripts in this version do not include: 
    - Object owners.
    - User Privileges (Access Control List).
-   - PostgreSQL Custom Range Types.
    - Some exotic custom aggregate options (most frequent ones are covered).
 
 3. Schema dump scripts are not always guaranteed to get the precise order for creating interdependent views, functions, procedures, and aggregates. In this version, the current order is:

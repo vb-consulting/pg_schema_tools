@@ -32,6 +32,8 @@ ${this._quote}
 
 ${this._aggregates}
 
+${this._ranges}
+
 ${this._routines}
 
 ${this._routines_order}

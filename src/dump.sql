@@ -11,6 +11,7 @@ create function schema.dump(
     
     _include_types boolean = true,
     _include_enums boolean = true,
+    _include_ranges boolean = true,
     _include_domains boolean = true,
     
     _include_tables boolean = true,
@@ -122,6 +123,18 @@ begin
         if _count > 0 then
             perform pg_temp.lines('-- enums');
             perform pg_temp.lines(definition) from enums_tmp;
+            perform pg_temp.lines('');
+        end if;
+    end if;
+
+    if _include_ranges then
+        create temp table ranges_tmp on commit drop as
+        select t.definition from schema._ranges(_schemas) t where schema._search_filter(t, _type, _search) order by t.schema, t.name;
+        
+        get diagnostics _count = row_count;
+        if _count > 0 then
+            perform pg_temp.lines('-- ranges');
+            perform pg_temp.lines(definition) from ranges_tmp;
             perform pg_temp.lines('');
         end if;
     end if;
@@ -328,4 +341,4 @@ begin
 end;
 $$;
 
-comment on function schema.dump(text, text, text, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) is 'Creates schema script dump.';
+comment on function schema.dump(text, text, text, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean, boolean) is 'Creates schema script dump.';
