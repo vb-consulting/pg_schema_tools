@@ -13,7 +13,7 @@ select
     'aggregate' as type,
     n.nspname as schema,
     p.proname as name,
-    pg_catalog.obj_description(p.oid, 'pg_proc') as comment,
+    null as comment,
     format(
         E'CREATE AGGREGATE %I.%I(%s) (\n%s\n);',
         n.nspname,

@@ -349,7 +349,7 @@ select
     'aggregate' as type,
     n.nspname as schema,
     p.proname as name,
-    pg_catalog.obj_description(p.oid, 'pg_proc') as comment,
+    null as comment,
     format(
         E'CREATE AGGREGATE %I.%I(%s) (\n%s\n);',
         n.nspname,
@@ -454,6 +454,13 @@ select
         'LANGUAGE ', lower(r.language), E'\n',
         case when r.security_type <> 'INVOKER' then 'SECURITY ' || r.security_type || E'\n' else '' end,
         case when r.is_deterministic = 'YES' then E'IMMUTABLE\n' else '' end,
+        case when r.parallel_option = 'u' then '' 
+            when r.parallel_option = 's' then E'PARALLEL SAFE\n' 
+            when r.parallel_option = 'r' then E'PARALLEL RESTRICTED\n' 
+        else '' end,
+        case when r.cost_num = 100 then '' else 'COST ' || r.cost_num::text || E'\n' end,
+        case when r.rows_num = 1000 or r.rows_num = 0  then '' else 'ROWS ' || r.rows_num::text || E'\n' end,
+        case when r.is_strict then E'STRICT\n' else '' end,
         E'AS', E'\n',
         schema._parse_routine_body(r.routine_definition, r.type || ' ' || r.name, r.comment),
         E'\n'
@@ -488,7 +495,11 @@ from (
         r.security_type,
         r.is_deterministic,
         schema._parse_return(proc.oid, r.specific_schema, r.specific_name) as returns,
-        r.routine_definition
+        r.routine_definition,
+        proc.proisstrict as is_strict,
+        procost as cost_num,
+        prorows as rows_num,
+        proparallel as parallel_option
     from
         information_schema.routines r
         join pg_catalog.pg_proc proc 
@@ -499,13 +510,15 @@ from (
             on proc.oid = pgdesc.objoid
     where
         r.specific_schema = any(_schemas)
-        and lower(r.external_language) = any(array['sql', 'plpgsql'])
+        and proc.prokind in ('f', 'p')
+        and not lower(r.external_language) = any(array['c', 'internal'])
     group by
         r.specific_schema, r.specific_name, r.routine_type, r.external_language, r.routine_name, 
         r.data_type, r.type_udt_catalog, r.type_udt_schema, r.type_udt_name,
         pgdesc.description, proc.proretset, r.routine_definition, proc.oid, r.security_type, r.is_deterministic
 ) r
-order by type desc, name
+order by 
+    type desc, name
 $$;
 /* #endregion _routines */
 
