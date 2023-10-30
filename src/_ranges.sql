@@ -24,7 +24,17 @@ select
         case when CANONICAL <> '-' and CANONICAL not like 'pg_%' then E',\n    CANONICAL = ' || CANONICAL else '' end,
         case when SUBTYPE_DIFF <> '-' and SUBTYPE_DIFF not like 'pg_%' then E',\n    SUBTYPE_DIFF = ' || SUBTYPE_DIFF else '' end,
         case when MULTIRANGE_TYPE_NAME <> '-' and MULTIRANGE_TYPE_NAME not like 'pg_%' then E',\n    MULTIRANGE_TYPE_NAME = ' || MULTIRANGE_TYPE_NAME else '' end,
-        E'\n);'
+        E'\n);',
+        case when sub.comment is null then '' else
+            concat(
+                E'\n',
+                'COMMENT ON TYPE ',
+                schema._ident(sub.schema, sub.name),
+                ' IS ',
+                schema._quote(sub.comment),
+                E';'
+            )
+        end
     ) as definition
 from (
     select
