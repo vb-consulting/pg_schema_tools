@@ -58,7 +58,12 @@ from (
         end as order_by,
         conname::text as name,
         connamespace::regnamespace::text as schema,
-        conrelid::regclass::text as table_name,
+                replace(
+            case when position('.' in conrelid::regclass::text) > 0 
+                then split_part(conrelid::regclass::text, '.', 2) 
+                else conrelid::regclass::text
+            end, '"', ''
+        ) as table_name, 
         pg_get_constraintdef(oid, true) as definition
     from 
         pg_catalog.pg_constraint 
