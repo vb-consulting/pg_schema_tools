@@ -12,6 +12,8 @@ end if;
 create schema schema;
 /* #endregion init */
 
+${this.v_tables}
+
 ${this._prepare_params}
 
 ${this._get_schema_array}
