@@ -12,7 +12,7 @@ end if;
 create schema schema;
 /* #endregion init */
 
-${this.v_tables}
+${this.tables}
 
 ${this._prepare_params}
 

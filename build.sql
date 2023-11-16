@@ -12,8 +12,8 @@ end if;
 create schema schema;
 /* #endregion init */
 
-/* #region v_tables */
-create view schema.v_tables as
+/* #region tables */
+create view schema.tables as
 select 
     sub.table_oid,
     sub.schema_name,
@@ -86,7 +86,7 @@ group by
     sub.table_oid,
     sub.schema_name,
     sub.table_name;
-/* #endregion v_tables */
+/* #endregion tables */
 
 /* #region _prepare_params */
 create function schema._prepare_params(

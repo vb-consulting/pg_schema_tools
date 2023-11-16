@@ -1,4 +1,4 @@
-create view schema.v_tables as
+create view schema.tables as
 select 
     sub.table_oid,
     sub.schema_name,
