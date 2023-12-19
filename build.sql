@@ -563,7 +563,7 @@ select
         case when r.security_type <> 'INVOKER' then 'SECURITY ' || r.security_type || E'\n' else '' end,
         --case when r.is_deterministic = 'YES' then E'IMMUTABLE\n' else '' end,
         case when r.volatility = 'i' then E'IMMUTABLE\n' 
-            when r.volatility = 's' then E'STABLE \n' 
+            when r.volatility = 's' then E'STABLE\n' 
             when r.volatility = 'v' then E'' 
         else '' end,
 
