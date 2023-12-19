@@ -561,7 +561,12 @@ select
         'RETURNS ', r.returns, E'\n',
         'LANGUAGE ', lower(r.language), E'\n',
         case when r.security_type <> 'INVOKER' then 'SECURITY ' || r.security_type || E'\n' else '' end,
-        case when r.is_deterministic = 'YES' then E'IMMUTABLE\n' else '' end,
+        --case when r.is_deterministic = 'YES' then E'IMMUTABLE\n' else '' end,
+        case when r.volatility = 'i' then E'IMMUTABLE\n' 
+            when r.volatility = 's' then E'STABLE \n' 
+            when r.volatility = 'v' then E'' 
+        else '' end,
+
         case when r.parallel_option = 'u' then '' 
             when r.parallel_option = 's' then E'PARALLEL SAFE\n' 
             when r.parallel_option = 'r' then E'PARALLEL RESTRICTED\n' 
@@ -605,6 +610,7 @@ from (
         schema._parse_return(proc.oid, r.specific_schema, r.specific_name) as returns,
         r.routine_definition,
         proc.proisstrict as is_strict,
+        proc.provolatile as volatility,
         procost as cost_num,
         prorows as rows_num,
         proparallel as parallel_option
